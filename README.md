@@ -1,22 +1,20 @@
-PDA: Privacy-preserving Distributed Algorithms
+dGEM: Decentralized algorithm for Generalized mixed Effect Models
 ==============================================
 
 
 ## Outline
 
-1. PDA workflow
+1. dGEM workflow
 2. Package requirements
 3. Instructions for installing and running pda package
-4. FAQ
 
 
-## PDA Workflow
-![](Picture1.png)
+## dGEM Workflow
+<img width="1170" alt="image" src="https://user-images.githubusercontent.com/38872447/159751836-2509fe6a-a7fa-45ec-bf50-35a403d45f89.png">
 
 ## Package Requirements
 - A database with clear and consistent variable names
 - On Windows: download and install [RTools](http://cran.r-project.org/bin/windows/Rtools/) 
-- For ODAC (One-shot distributed algorithm for Cox regression), make sure you have cpp compiler as ODAC requires [Rcpp](https://cran.r-project.org/web/packages/Rcpp/vignettes/Rcpp-FAQ.pdf).
 
 
 ## Instructions for Installing and Running pda Package
@@ -46,14 +44,14 @@ library(pda)
 
 Below are two ways to run the pda examples. 
 
-In the toy example below we aim to analyze the association of lung status with age and sex using logistic regression, data(lung) from 'survival', we randomly assign to 3 sites: 'site1', 'site2', 'site3'. We demonstrate using PDA ODAL can obtain a surrogate estimator that is close to the pooled estimate. We run the example in local directory. In actual collaboration, account/password for pda server will be assigned to the sites at the server https://pda.one. Each site can access via web browser to check the communication of the summary stats.
+In the toy example below we aim to analyze the association of lung status with age and sex using logistic regression, data(lung) from 'survival', we randomly assign to 3 sites: 'site1', 'site2', 'site3'. We run the example in local directory. In actual collaboration, our pda-ota (pda over the air) platform can be used to coordinate the project using a cloud-based server. 
 
 You can either 
 
 #### *Run example with demo()*
 
 ```r
-demo(ODAL)
+demo(dGEM)
 ``` 
 or
 ####  *Run example with code*
@@ -90,7 +88,7 @@ control <- list(project_name = 'Lung cancer study',
                 step = 'initialize',
                 sites = sites,
                 heterogeneity = FALSE,
-                model = 'ODAL',
+                model = 'dGEM',
                 family = 'binomial',
                 outcome = "status",
                 variables = c('age', 'sex'),
@@ -98,81 +96,60 @@ control <- list(project_name = 'Lung cancer study',
                 lead_site = 'site1',
                 upload_date = as.character(Sys.time()) )
 
-## run the example in local directory:
-## assume lead site1: enter "1" to allow transferring the control file
+##' specify control file (to be shared with others)
 pda(site_id = 'site1', control = control, dir = getwd())
-## in actual collaboration, account/password for pda server will be assigned, thus:
-# pda(site_id = 'site1', control = control, uri = 'https://pda.one', secret='abc123')
-## you can also set your environment variables, and no need to specify them in pda:
-# Sys.setenv(PDA_USER = 'site1', PDA_SECRET = 'abc123', PDA_URI = 'https://pda.one')
-# pda(site_id = 'site1', control = control)
 
-##' assume remote site3: enter "1" to allow tranferring your local estimate
+##' run dGEM step 1 under site 3
 pda(site_id = 'site3', ipdata = lung_split[[3]], dir=getwd())
 
-##' assume remote site2: enter "1" to allow tranferring your local estimate
+##' run dGEM step 1 under site 2
 pda(site_id = 'site2', ipdata = lung_split[[2]], dir=getwd())
 
-
-##' assume lead site1: enter "1" to allow tranferring your local estimate
+## run dGEM step 1 under site 1
 ##' control.json is also automatically updated
 pda(site_id = 'site1', ipdata = lung_split[[1]], dir=getwd())
 
-##' if lead site1 initialized before other sites,
-##' lead site1: uncomment to sync the control before STEP 2
-#' pda(site_id = 'site1', control = control)
-#' config <- getCloudConfig(site_id = 'site1')
-#' pdaSync(config)
+
 ``` 
-Step 2: Calculate derivatives at each site
+Step 2: Calculate estimated hospital effects
 
 ```r
-#' ############################'  STEP 2: derivative  ###############################
-##' assume remote site3: enter "1" to allow tranferring your derivatives
+#' ############################'  STEP 2: derive  ###############################
+##' run dGEM step 2 under site 3
 pda(site_id = 'site3', ipdata = lung_split[[3]], dir=getwd())
 
-##' assume remote site2: enter "1" to allow tranferring your derivatives
+##' run dGEM step 2 under site 2
 pda(site_id = 'site2', ipdata = lung_split[[2]], dir=getwd())
 
-##' assume lead site1: enter "1" to allow tranferring your derivatives
+##' run dGEM step 2 under site 1
+##' control.json is also automatically updated
 pda(site_id = 'site1', ipdata = lung_split[[1]], dir=getwd())
 ``` 
-Step 3: Surrogate estimate
+Step 3: Calculate counterfactural rates
 
 ```r
 #' ############################'  STEP 3: estimate  ###############################
-##' assume lead site1: enter "1" to allow tranferring the surrogate estimate
+##' run dGEM step 3 under site 3
+pda(site_id = 'site3', ipdata = lung_split[[3]], dir=getwd())
+
+##' run dGEM step 3 under site 2
+pda(site_id = 'site2', ipdata = lung_split[[2]], dir=getwd())
+
+##' run dGEM step 3 under site 1
+##' control.json is also automatically updated
 pda(site_id = 'site1', ipdata = lung_split[[1]], dir=getwd())
 
-##' the PDA ODAL is now completed!
-##' All the sites can still run their own surrogate estimates and broadcast them.
 
 ``` 
-Compare with the pooled and meta estimators
+
+Step 4: Calculate standardized event rates
 
 ```r
-##' compare the surrogate estimate with the pooled estimate
-config <- getCloudConfig(site_id = 'site1', dir=getwd())
-fit.odal <- pdaGet(name = 'site1_estimate', config = config)
-control <- pdaGet(name = 'control', config)
-cbind(b.pool=fit.pool$coef,
-	   b.meta=control$beta_init,
-      b.odal=fit.odal$btilde )
+#' ############################'  STEP 4: synthesize  ###############################
+##' run final step in the lead site or coordinating center
+pda(site_id = 'site1', ipdata = lung_split[[1]], dir=getwd())
 
-```
-
-For other examples, please see 
-
-```r
-demo(ODAC)
-```
-for Cox regression, and 
- 
-```r
-demo(ODAP)
-```
-for hurdle regression.
-
-
+##' the PDA dGEM is now completed!
+``` 
 
 
