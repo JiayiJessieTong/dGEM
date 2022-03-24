@@ -87,11 +87,12 @@ Step 1: Initialization
 control <- list(project_name = 'Lung cancer study',
                 step = 'initialize',
                 sites = sites,
-                heterogeneity = FALSE,
+                heterogeneity = TRUE,
                 model = 'dGEM',
                 family = 'binomial',
                 outcome = "status",
                 variables = c('age', 'sex'),
+                variables_site_level = c('volume'),
                 optim_maxit = 100,
                 lead_site = 'site1',
                 upload_date = as.character(Sys.time()) )
@@ -116,14 +117,14 @@ Step 2: Calculate estimated hospital effects
 ```r
 #' ############################'  STEP 2: derive  ###############################
 ##' run dGEM step 2 under site 3
-pda(site_id = 'site3', ipdata = lung_split[[3]], dir=getwd())
+pda(site_id = 'site3', ipdata = lung_split[[3]], hosdata = c('volume' = 3000), dir=getwd())
 
 ##' run dGEM step 2 under site 2
-pda(site_id = 'site2', ipdata = lung_split[[2]], dir=getwd())
+pda(site_id = 'site2', ipdata = lung_split[[2]], hosdata = c('volume' = 5000), dir=getwd())
 
 ##' run dGEM step 2 under site 1
 ##' control.json is also automatically updated
-pda(site_id = 'site1', ipdata = lung_split[[1]], dir=getwd())
+pda(site_id = 'site1', ipdata = lung_split[[1]], hosdata = c('volume' = 10000), dir=getwd())
 ``` 
 Step 3: Calculate counterfactural rates
 
