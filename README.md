@@ -112,7 +112,7 @@ pda(site_id = 'site1', ipdata = lung_split[[1]], dir=getwd())
 
 
 ``` 
-Step 2: Calculate estimated hospital effects
+Step 2: Calculate hospital effects
 
 ```r
 #' ############################'  STEP 2: derive  ###############################
